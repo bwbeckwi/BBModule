@@ -1,2 +1,2 @@
 # BBModule
-v1.2.5 Added new Function: Get-BBServiceInfo
+Many functions to help in Server administration
