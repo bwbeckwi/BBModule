@@ -1,2 +1,1 @@
-# BBModule
-Many functions to help in Server administration
+#Many functions to help in Server administration#
