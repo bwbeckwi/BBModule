@@ -2,6 +2,7 @@
 
     MODULE:  BBMODULE
    
+    Updated: v2.2.7--Added Get-BBNICPropInfo--Lets Users select the NIC they want info for.
     Updated: v2.2.6--Updated Get-BBAdvOSInfo--Fixed the error message when not logging to file.
 	Updated: v2.2.5--Updated Get-BBAdvOSInfo--Fixed the error log file switch and log
 	Updated: v2.2.4--Updated Get-BBAdvOSInfo--Fixed PowerShell Version
@@ -1771,8 +1772,52 @@
         Write-Verbose "Completed END block"
 	        
 	    } #End: END Block
-	    
-	} #End: Function Get-BBAdvOSInfo
-	
+    
+} #End: Function Get-BBAdvOSInfo
+
+
+    function Get-BBNICPropInfo{
+<#
+.SYNOPSIS
+
+.DESCRIPTION
+
+.PARAMETER
+
+.INPUTS
+
+.OUTPUTS
+
+.NOTES
+v1.0.1
+Downloaded from Web and modified by Brad Beckwith-January 19, 2018
+
+Create a hash table where the key holds the selected properties to display, 
+and the value is the original object
+#>
+    
+    $hashTable = Get-WmiObject -Class Win32_NetworkAdapterConfiguration |
+    # sort the objects by a property of your choice
+    Sort-Object -Property Description |
+    # use an ordered hash table to keep sort order
+    # (requires PowerShell 3; for older PowerShell remove [Ordered])
+    ForEach-Object { $ht = [Ordered]@{ } }{
+        # specify the properties that you would like to show in a grid view window
+        $key = $_ | Select-Object -Property Description, IPAddress, MacAddress
+        $ht.Add($key, $_)
+    }{ $ht }
+    Group-Object -Property Description, Index -AsHashTable -AsString
+    
+    # show the keys in the grid view window 
+    $hashTable.Keys |
+    Out-GridView -Title "Select Network Card" -OutputMode Multiple |
+    ForEach-Object {
+        # and retrieve the original (full) object by using
+        # the selected item as key into your hash table
+        $selectedObject = $hashTable[$_]
+        $selectedObject | Select-Object -Property *
+    }
+    
+} #End: Function Get-BBNICProcInfo
 	
 	#Export-ModuleMember -Function 'Get-*'
