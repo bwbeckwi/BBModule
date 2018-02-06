@@ -2,6 +2,7 @@
 
     MODULE:  BBMODULE
    
+    Updated: v2.2.8--Added Get-BBDriveType Function--Gets drive info for a computer
     Updated: v2.2.7--Added Get-BBNICPropInfo--Lets Users select the NIC they want info for.
     Updated: v2.2.6--Updated Get-BBAdvOSInfo--Fixed the error message when not logging to file.
 	Updated: v2.2.5--Updated Get-BBAdvOSInfo--Fixed the error log file switch and log
@@ -18,7 +19,55 @@
 	Updated: v2.1.4--Added new Function:Get-BBSAdvOSInfo
 	Updated: v2.1.3--Added new Function:Get-BBServiceInfo
 #>	
-	
+
+    function Get-BBDriveType{
+<#	
+
+.SYNOPSIS
+Get hard drive information
+.DESCRIPTION
+Get hard drive information
+
+.PARAMETER ComputerName
+
+.EXAMPLE
+.\Get-BBDriveType
+
+.INPUTS
+ComputerName
+
+.OUTPUTS
+N/A
+
+.LINK
+N/A
+
+.NOTES
+v1.0.0-Released:20180206
+==========================================================================
+    Purpose:        Get hard drive information
+    Created on:   	2/6/2018 6:58 AM
+	Created by:   	Brad Beckwith
+    Version:        1.0.0
+==========================================================================
+
+#>
+    
+    param
+    (
+        [parameter(Mandatory = $false)]
+        [string[]]$ComputerName = $($env:COMPUTERNAME)
+    )
+    
+    
+    Get-WmiObject -Class Win32_DiskDrive -ComputerName $ComputerName |`
+    Select PSComputerName, DeviceID, Model, Partitions, InterfaceType,`
+           Size, FirmwareRevision, SerialNumber, MediaType |`
+    Sort DeviceID
+    
+} # End Function Get-BBDriveType
+
+
 	Function Set-BBFileTimeStamps{
 	    
 	<#
