@@ -1,6 +1,6 @@
 ## Welcome to BBModule ##
 
-#### BBModule is currently at v2.2.6 ####
+#### BBModule is currently at v2.2.8 ####
 'Get-BBHardDriveSize'
 'Set-BBFileTimeStamps'
 'Get-BBIKGFADUserACC'
