@@ -7,6 +7,5 @@
     <File Build="2">BBModule.psd1</File>
     <File Build="0">BBModule.psm1</File>
   </Files>
-  <StartupScript>
-  </StartupScript>
+  <StartupScript></StartupScript>
 </Project>

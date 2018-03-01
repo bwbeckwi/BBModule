@@ -2,7 +2,6 @@
 
     MODULE:  BBMODULE
    
-    Updated: v2.2.8--Added Get-BBDriveType Function--Gets drive info for a computer
     Updated: v2.2.7--Added Get-BBNICPropInfo--Lets Users select the NIC they want info for.
     Updated: v2.2.6--Updated Get-BBAdvOSInfo--Fixed the error message when not logging to file.
 	Updated: v2.2.5--Updated Get-BBAdvOSInfo--Fixed the error log file switch and log
@@ -20,56 +19,9 @@
 	Updated: v2.1.3--Added new Function:Get-BBServiceInfo
 #>	
 
-    function Get-BBDriveType{
-<#	
-
-.SYNOPSIS
-Get hard drive information
-.DESCRIPTION
-Get hard drive information
-
-.PARAMETER ComputerName
-
-.EXAMPLE
-.\Get-BBDriveType
-
-.INPUTS
-ComputerName
-
-.OUTPUTS
-N/A
-
-.LINK
-N/A
-
-.NOTES
-v1.0.0-Released:20180206
-==========================================================================
-    Purpose:        Get hard drive information
-    Created on:   	2/6/2018 6:58 AM
-	Created by:   	Brad Beckwith
-    Version:        1.0.0
-==========================================================================
-
-#>
+Function Set-BBFileTimeStamps
+{
     
-    param
-    (
-        [parameter(Mandatory = $false)]
-        [string[]]$ComputerName = $($env:COMPUTERNAME)
-    )
-    
-    
-    Get-WmiObject -Class Win32_DiskDrive -ComputerName $ComputerName |`
-    Select PSComputerName, DeviceID, Model, Partitions, InterfaceType,`
-           Size, FirmwareRevision, SerialNumber, MediaType |`
-    Sort DeviceID
-    
-} # End Function Get-BBDriveType
-
-
-	Function Set-BBFileTimeStamps{
-	    
 	<#
 	
 	.SYNOPSIS
@@ -139,46 +91,47 @@ v1.0.0-Released:20180206
 	    Version:       0.9.2
 	
 	#>    
-	    
-	    [CmdletBinding()]
-	    Param (
-	        [Parameter(mandatory = $true, HelpMessage = "Default Path is C:\temp")]
-	        [string[]]$path = "C:\Temp",
-	        [Parameter(mandatory = $false, HelpMessage = "Default days back are 40")]
-	        [int]$ndays = -40,
-	        [Parameter(mandatory = $false, HelpMessage = "Recurse - Default: Off")]
-	        $m_recurse = $false
-	    ) # End: Param
-	    
-	    [datetime]$date = (Get-Date)
-	    $date = $date.AddDays($ndays)
-	    $mcmd = $null
-	    Write-Host "`nNew date is: $date" -ForegroundColor Yellow
-	    
-	    if ($m_recurse -eq $True -or $m_recurse -eq 1)
-	    {
-	        $mcmd = Get-ChildItem -Path $path -Recurse
-	    }
-	    else
-	    {
-	        $mcmd = Get-ChildItem -Path $path
-	    }
-	    
-	    $mcmd |
-	    ForEach-Object `
-	    {
-	        $_.CreationTime = $date
-	        $_.LastAccessTime = $date
-	        $_.LastWriteTime = $date
-	    } # End: ForEach
-	    
-	    
-	    Write-Host "`nDates have been changed. Exiting script..." -ForegroundColor Green
-	    
-	} #end function Set-FileTimeStamps
-	
-	
-	function Get-BBHardDriveSize{
+    
+    [CmdletBinding()]
+    Param (
+        [Parameter(mandatory = $true, HelpMessage = "Default Path is C:\temp")]
+        [string[]]$path = "C:\Temp",
+        [Parameter(mandatory = $false, HelpMessage = "Default days back are 40")]
+        [int]$ndays = -40,
+        [Parameter(mandatory = $false, HelpMessage = "Recurse - Default: Off")]
+        $m_recurse = $false
+    ) # End: Param
+    
+    [datetime]$date = (Get-Date)
+    $date = $date.AddDays($ndays)
+    $mcmd = $null
+    Write-Host "`nNew date is: $date" -ForegroundColor Yellow
+    
+    if ($m_recurse -eq $True -or $m_recurse -eq 1)
+    {
+        $mcmd = Get-ChildItem -Path $path -Recurse
+    }
+    else
+    {
+        $mcmd = Get-ChildItem -Path $path
+    }
+    
+    $mcmd |
+    ForEach-Object `
+    {
+        $_.CreationTime = $date
+        $_.LastAccessTime = $date
+        $_.LastWriteTime = $date
+    } # End: ForEach
+    
+    
+    Write-Host "`nDates have been changed. Exiting script..." -ForegroundColor Green
+    
+} #end function Set-FileTimeStamps
+
+
+function Get-BBHardDriveSize
+{
 	<#
 	.SYNOPSYS
 	
@@ -202,67 +155,68 @@ v1.0.0-Released:20180206
 	Author:       Brad Beckwith
 	Date:         Jan. 2017
 	#>
-	    
-	    [cmdletbinding(SupportsShouldProcess)]
-	    param
-	    (
-	        
-	    )
-	    
-	    BEGIN
-	    {
-	        Write-Verbose "`nGathering information`n"
-	    }
-	    
-	    PROCESS
-	    {
-	        Write-Verbose "Processing"
-	        
-	        if ($PSCmdlet.ShouldProcess)
-	        {
-	            
-	            # get calculated properties:
-	            $prop1 = @{
-	                Name = 'DriveLetter'
-	                Expression = { $_.DeviceID }
-	            }
-	            
-	            $prop2 = @{
-	                Name = 'Free(GB)'
-	                Expression = { [Math]::Round(($_.FreeSpace / 1GB), 1) }
-	            }
-	            
-	            $prop3 = @{
-	                Name = 'Size(GB)'
-	                Expression = { [Math]::Round(($_.Size / 1GB), 1) }
-	            }
-	            
-	            $prop4 = @{
-	                Name = 'Percent'
-	                Expression = { [Math]::Round(($_.Freespace * 100 / $_.Size), 1) }
-	            }
-	            
-	            # get all hard drives
-	            #            $info = Get-CimInstance -ClassName Win32_LogicalDisk -ComputerName $ComputerName | where { $_.DriveType -eq 3 } |`
-	            $info = Get-CimInstance -ClassName Win32_LogicalDisk | where { $_.DriveType -eq 3 } |`
-	            Select-Object -Property $prop1, $prop2, $prop3, $prop4
-	            
-	            Write-Verbose "Writing info to screen"
-	            $info
-	        }
-	        
-	        Write-Verbose "End Processing"
-	    }
-	    
-	    END
-	    {
-	        Write-Verbose "`nComplete`n"
-	    }
-	    
-	} #End Function: Get-HardDriveSize
-	
-	
-	function Get-BBIKGFADUserACC{
+    
+    [cmdletbinding(SupportsShouldProcess)]
+    param
+    (
+        
+    )
+    
+    BEGIN
+    {
+        Write-Verbose "`nGathering information`n"
+    }
+    
+    PROCESS
+    {
+        Write-Verbose "Processing"
+        
+        if ($PSCmdlet.ShouldProcess)
+        {
+            
+            # get calculated properties:
+            $prop1 = @{
+                Name        = 'DriveLetter'
+                Expression  = { $_.DeviceID }
+            }
+            
+            $prop2 = @{
+                Name        = 'Free(GB)'
+                Expression  = { [Math]::Round(($_.FreeSpace / 1GB), 1) }
+            }
+            
+            $prop3 = @{
+                Name        = 'Size(GB)'
+                Expression  = { [Math]::Round(($_.Size / 1GB), 1) }
+            }
+            
+            $prop4 = @{
+                Name        = 'Percent'
+                Expression  = { [Math]::Round(($_.Freespace * 100 / $_.Size), 1) }
+            }
+            
+            # get all hard drives
+            #            $info = Get-CimInstance -ClassName Win32_LogicalDisk -ComputerName $ComputerName | where { $_.DriveType -eq 3 } |`
+            $info = Get-CimInstance -ClassName Win32_LogicalDisk | where { $_.DriveType -eq 3 } |`
+            Select-Object -Property $prop1, $prop2, $prop3, $prop4
+            
+            Write-Verbose "Writing info to screen"
+            $info
+        }
+        
+        Write-Verbose "End Processing"
+    }
+    
+    END
+    {
+        Write-Verbose "`nComplete`n"
+    }
+    
+} #End Function: Get-HardDriveSize
+
+
+function Get-BBIKGFADUserACC
+{
 	<#
 	.SYNOPSIS
 	Searches for one or more Groups and lists the owner of the group.
@@ -314,96 +268,100 @@ v1.0.0-Released:20180206
 		V1.0.0:     Get Active Directory information to help with finding "User" account information.
 		Date:       September 6, 2017
 	#>
-	    
-	    [cmdletBinding(SupportsShouldProcess = $True)]
-	    param (
-	        [parameter(
-	                   mandatory = $false,
-	                   ValueFromPipeline = $True,
-	                   ValueFromPipelineByPropertyName = $True)
-	        ]
-	        [string[]]$Search = @("*IKGF*",
-	            "SQL_CCAM*",
-	            "SQL_IKGF*",
-	            "SYS_CCAM*",
-	            "SYS_CTAP*",
-	            "SYS_IKGF*"
-	        ) #End: Search Array
-	    ) #End: Param
-	    
-	    BEGIN
-	    {
-	        
-	    }
-	    PROCESS
-	    {
-	        If ($PSCmdlet.ShouldProcess)
-	        {
-	            try
-	            {
-	                $Search | % {
-	                    Get-AdUser -Filter 'Name -like $_' -Properties * |`
-	                    select DisplayName, SamAccountName, Created, LastLogonDate, Modified, PasswordLastSet,`
-	                           EmployeeID, PasswordExpired, Enabled
-	                } #End: Search
-	            }
-	            catch
-	            {
-	                Write-Host "Could not get information for $Search."
-	            }
-	        }
-	        Else
-	        {
-	            Write-Error "Nothing to search or 'SupportsShouldProcess' is False"
-	        }
-	    }
-	    END
-	    {
-	        
-	    }
-	    
-	} #End: Function Get-BBIKGFADUserACC
-	
-	
-	function Get-BBIKGFADGrpMbrACC{
-		[cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param (
-			[parameter(
-					   mandatory = $false,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $True)
-			]
-			[string[]]$Search = ("IKGF Staff")
-		)
-		
-		$Search | % {
-			Get-ADGroupMember $Search  |`
-			select Name, SamAccountName | Sort Name
-		}
-	} #End: Function Get-BBIKGFADGrpMbrACC
-	
-	
-	function Get-BBPSVersion{
-		
-		$PSVersionTable.PSVersion
-		
-	} #End: Function Get-BBPSVersion
-	
-	
-	function Get-BBSN{
-		
-		Clear
-		cd "C:\"
-		$serial = Get-WmiObject -Class Win32_ComputerSystemProduct |
-		Select-Object -ExpandProperty IdentifyingNumber
-		Write-Host "`n"
-		"Serial Number is: $serial"
-		Write-Host "`n"
-		cd \
-	} #End: Function Get-BBSN
-	
-	
-	function Get-BBOSInfo{
+    
+    [cmdletBinding(SupportsShouldProcess = $True)]
+    param (
+        [parameter(
+                   mandatory = $false,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)
+        ]
+        [string[]]$Search = @("*IKGF*",
+            "SQL_CCAM*",
+            "SQL_IKGF*",
+            "SYS_CCAM*",
+            "SYS_CTAP*",
+            "SYS_IKGF*"
+        ) #End: Search Array
+    ) #End: Param
+    
+    BEGIN
+    {
+        
+    }
+    PROCESS
+    {
+        If ($PSCmdlet.ShouldProcess)
+        {
+            try
+            {
+                $Search | % {
+                    Get-AdUser -Filter 'Name -like $_' -Properties * |`
+                    select DisplayName, SamAccountName, Created, LastLogonDate, Modified, PasswordLastSet,`
+                           EmployeeID, PasswordExpired, Enabled
+                } #End: Search
+            }
+            catch
+            {
+                Write-Host "Could not get information for $Search."
+            }
+        }
+        Else
+        {
+            Write-Error "Nothing to search or 'SupportsShouldProcess' is False"
+        }
+    }
+    END
+    {
+        
+    }
+    
+} #End: Function Get-BBIKGFADUserACC
+
+
+function Get-BBIKGFADGrpMbrACC
+{
+    [cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param (
+        [parameter(
+                   mandatory = $false,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)
+        ]
+        [string[]]$Search = ("IKGF Staff")
+    )
+    
+    $Search | % {
+        Get-ADGroupMember $Search |`
+        select Name, SamAccountName | Sort Name
+    }
+} #End: Function Get-BBIKGFADGrpMbrACC
+
+
+function Get-BBPSVersion
+{
+    
+    $PSVersionTable.PSVersion
+    
+} #End: Function Get-BBPSVersion
+
+
+function Get-BBSN
+{
+    
+    Clear
+    cd "C:\"
+    $serial = Get-WmiObject -Class Win32_ComputerSystemProduct |
+    Select-Object -ExpandProperty IdentifyingNumber
+    Write-Host "`n"
+    "Serial Number is: $serial"
+    Write-Host "`n"
+    cd \
+} #End: Function Get-BBSN
+
+
+function Get-BBOSInfo
+{
 	<#
 	.SYNOPSIS
 	This function will work with one or more computer names. The
@@ -447,147 +405,149 @@ v1.0.0-Released:20180206
 	Purpose:    Use PowerShell script I have already written and
 	place them somewhere I can use them quickly.
 	#>
-		
-		[cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param (
-			[parameter(mandatory = $True,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $True)
-			]
-			[alias('hostname')]
-			[ValidateLength(1, 20)]
-			[ValidateCount(1, 150)]
-			[string[]]$ComputerName,
-			[switch]$NameLog
-			
-		) #End: Param
-		
-		BEGIN
-		{
-			Set-Location -Path "C:\"
-			If ($NameLog)
-			{
-				Write-Verbose "Finding name log file"
-				
-				$i = 0
-				Do
-				{
-					$LogFile = "Names-$i.txt"
-					$i++
-				}
-				While (Test-Path $LogFile)
-				
-				Write-Verbose "Log file name will be $LogFile"
-			}
-			else
-			{
-				Write-Verbose "Name logging off"
-			} #End: If $NameLog
-			
-			Write-Debug "Completed BEGIN block"
-		} #End: BEGIN Block
-		
-		PROCESS
-		{
-			Write-Debug "Starting Process block"
-			
-			ForEach ($Computer in $ComputerName)
-			{
-				If ($PSCmdlet.ShouldProcess($Computer))
-				{
-					$Computer = $Computer.ToUpper()
-					Write-Verbose "Now connecting to $Computer"
-					
-					If ($NameLog)
-					{
-						$Computer | Out-File $LogFile -Append
-					} #End: If $NameLog
-					
-					try
-					{
-						$Continue = $True
-						#EV (ErrorVariable), EA (ErrorAction)
-						$os = Get-WmiObject -ErrorVariable myErr `
-						-ErrorAction 'Stop' -ComputerName $ComputerName `
-						-Class Win32_OperatingSystem |
-						Select Caption, BuildNumber, OSArchitecture,
-						ServicePackMajorVersion -First 1
-					}
-					catch
-					{
-						Write-Verbose "Should be creating Error file now;Connection to $Computer failed"
-						$Continue = $false
-						$Computer | Out-File C:\Errors.txt
-						$myErr | Out-File C:\ErrorMessages.txt
-					} #End: Catch
-					
-					If ($Continue)
-					{
-						Write-Verbose "Connection to $Computer succeeded"
-						$bios = Get-WmiObject -ComputerName $ComputerName `
-											  -Class Win32_BIOS |
-						Select SerialNumber -First 1
-						$processor = Get-WmiObject -ComputerName $ComputerName `
-												   -Class Win32_Processor |
-						Select AddressWidth -First 1
-						$osarchitecture = $os.osarchitecture -replace '-bit', ''
-						
-						$mPSVersion = ($host).Version
-						
-						Write-Debug "Creating properties"
-						$properties = @{
-							'ComputerName' = $Computer;
-							'OSVersion'    = $os.Caption;
-							'OSBuild'	  = $os.BuildNumber;
-							'OSArchitecture' = $osarchitecture;
-							'OSSPVersion'  = $os.ServicePackMajorVersion;
-							'BIOSSerialNumber' = $bios.SerialNumber;
-							'ProcArchitecture' = $processor.addresswidth;
-							'PSVersion'    = $mPSVersion
-						} #End: $Properties
-						
-						Write-Debug "Creating output Object; ready to write to pipeline"
-						$obj = New-Object -TypeName PSObject -Property $properties #Creates new Object for output
-						Write-Output $obj |
-						Select ComputerName, BIOSSerialNumber, OSArchitecture, OSBuild,
-							   OSSPVersion, OSVersion, PSVersion, ProcArchitecture
-					} #End: If $continue
-					
-				} #End: If $PSCmdlet
-			} #End: ForEach
-			
-			Write-Debug "Completing Process block"
-		} #End: Process Block
-		
-		END
-		{
-			Write-Verbose "Completed"
-			Write-Debug "Completed END block"
-		} #End: END Block
-		
-		
-	} #End: Function Get-BBOSInfo
-	
-	
-	function Get-BBServicesToShutDn{
-		
-		#This currently work on the local machine only.
-		
-		[cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		#Support Whatif
-		param (
-			
-		)
-		
-		Write-Verbose "Listing Services that can be shut down."
-		Get-Service |
-		Where { $_.Status -eq "Running" -and $_.CanStop }
-		
-	} #End: Function Get-BBServicesToShutDn
-	
-	
-	function Get-BBiKGFServers{
-	    
+    
+    [cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param (
+        [parameter(mandatory = $True,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)
+        ]
+        [alias('hostname')]
+        [ValidateLength(1, 20)]
+        [ValidateCount(1, 150)]
+        [string[]]$ComputerName,
+        [switch]$NameLog
+        
+    ) #End: Param
+    
+    BEGIN
+    {
+        Set-Location -Path "C:\"
+        If ($NameLog)
+        {
+            Write-Verbose "Finding name log file"
+            
+            $i = 0
+            Do
+            {
+                $LogFile = "Names-$i.txt"
+                $i++
+            }
+            While (Test-Path $LogFile)
+            
+            Write-Verbose "Log file name will be $LogFile"
+        }
+        else
+        {
+            Write-Verbose "Name logging off"
+        } #End: If $NameLog
+        
+        Write-Debug "Completed BEGIN block"
+    } #End: BEGIN Block
+    
+    PROCESS
+    {
+        Write-Debug "Starting Process block"
+        
+        ForEach ($Computer in $ComputerName)
+        {
+            If ($PSCmdlet.ShouldProcess($Computer))
+            {
+                $Computer = $Computer.ToUpper()
+                Write-Verbose "Now connecting to $Computer"
+                
+                If ($NameLog)
+                {
+                    $Computer | Out-File $LogFile -Append
+                } #End: If $NameLog
+                
+                try
+                {
+                    $Continue = $True
+                    #EV (ErrorVariable), EA (ErrorAction)
+                    $os = Get-WmiObject -ErrorVariable myErr `
+                                        -ErrorAction 'Stop' -ComputerName $ComputerName `
+                                        -Class Win32_OperatingSystem |
+                    Select Caption, BuildNumber, OSArchitecture,
+                           ServicePackMajorVersion -First 1
+                }
+                catch
+                {
+                    Write-Verbose "Should be creating Error file now;Connection to $Computer failed"
+                    $Continue = $false
+                    $Computer | Out-File C:\Errors.txt
+                    $myErr | Out-File C:\ErrorMessages.txt
+                } #End: Catch
+                
+                If ($Continue)
+                {
+                    Write-Verbose "Connection to $Computer succeeded"
+                    $bios = Get-WmiObject -ComputerName $ComputerName `
+                                          -Class Win32_BIOS |
+                    Select SerialNumber -First 1
+                    $processor = Get-WmiObject -ComputerName $ComputerName `
+                                               -Class Win32_Processor |
+                    Select AddressWidth -First 1
+                    $osarchitecture = $os.osarchitecture -replace '-bit', ''
+                    
+                    $mPSVersion = ($host).Version
+                    
+                    Write-Debug "Creating properties"
+                    $properties = @{
+                        'ComputerName'  = $Computer;
+                        'OSVersion'     = $os.Caption;
+                        'OSBuild'       = $os.BuildNumber;
+                        'OSArchitecture' = $osarchitecture;
+                        'OSSPVersion'   = $os.ServicePackMajorVersion;
+                        'BIOSSerialNumber' = $bios.SerialNumber;
+                        'ProcArchitecture' = $processor.addresswidth;
+                        'PSVersion'     = $mPSVersion
+                    } #End: $Properties
+                    
+                    Write-Debug "Creating output Object; ready to write to pipeline"
+                    $obj = New-Object -TypeName PSObject -Property $properties #Creates new Object for output
+                    Write-Output $obj |
+                    Select ComputerName, BIOSSerialNumber, OSArchitecture, OSBuild,
+                           OSSPVersion, OSVersion, PSVersion, ProcArchitecture
+                } #End: If $continue
+                
+            } #End: If $PSCmdlet
+        } #End: ForEach
+        
+        Write-Debug "Completing Process block"
+    } #End: Process Block
+    
+    END
+    {
+        Write-Verbose "Completed"
+        Write-Debug "Completed END block"
+    } #End: END Block
+    
+    
+} #End: Function Get-BBOSInfo
+
+
+function Get-BBServicesToShutDn
+{
+    
+    #This currently work on the local machine only.
+    
+    [cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    #Support Whatif
+    param (
+        
+    )
+    
+    Write-Verbose "Listing Services that can be shut down."
+    Get-Service |
+    Where { $_.Status -eq "Running" -and $_.CanStop }
+    
+} #End: Function Get-BBServicesToShutDn
+
+
+function Get-BBiKGFServers
+{
+    
 	<#
 	.SYNOPSIS
 		This Function creates output of sorted Computer names.
@@ -645,81 +605,82 @@ v1.0.0-Released:20180206
 		Date:			April'16
 	    
 	#>
-	    
-	    [cmdletBinding(SupportsShouldProcess)]
-	    param (
-	        
-	    )
-	    
-	    BEGIN
-	    {
-	        #Import Active Directory Module before running
-	        Import-Module ActiveDirectory
-	        
-	        $ad = Get-Module | Select Name -First 1
-	        $ans = ($ad).Name.Trim()
-	        
-	        Write-Host "`n"
-	        
-	    }
-	    PROCESS
-	    {
-	        if ($PSCmdlet.ShouldProcess)
-	        {
-	            
-	            If (!($ans -eq "ActiveDirectory"))
-	            {
-	                Write-Warning "Active Directory Module not loaded, exiting script!"
-	                break
-	            }
-	            
-	            $MyServerList = Get-ADComputer -Filter { Name -like "AZSKGF*" } | select -ExpandProperty Name
-	            $MyServerList += Get-ADComputer -Filter { Name -like "JFSKGF*" } | select -ExpandProperty Name
-	            $MyServerList += (Get-ADComputer -Filter { Name -like "devazcam*" }) | select -ExpandProperty Name
-	            $MyServerList += (Get-ADComputer -Filter { Name -like "devegcam*" }) | select -ExpandProperty Name
-	            $MyServerList += (Get-ADComputer -Filter { Name -like "prdazcam*" }) | select -ExpandProperty Name
-	            $MyServerList += (Get-ADComputer -Filter { Name -like "prdegcam*" }) | select -ExpandProperty Name
-	            $MyServerList += (Get-ADComputer -Filter { Name -like "tstazcam*" }) | select -ExpandProperty Name
-	            $MyServerList += (Get-ADComputer -Filter { Name -like "tstazcam*" }) | select -ExpandProperty Name
-	            
-	            try
-	            {
-	                If ($MyServerList)
-	                {
-	                    #Write-Output $MyServerList | Sort
-	                    $MyServerList | Sort
-	                }
-	                else
-	                {
-	                    Write-Warning "MyServerList Array was not created, exiting script!"
-	                    break
-	                }
-	            }
-	            catch
-	            {
-	                Write-Warning "Can't Write output to screen!"
-	                break
-	            }
-	            
-	        }
-	        else
-	        {
-	            Write-Error "Nothing to search or 'SupportsShouldProcess' is False"
-	        } #End: Should Process
-	    }
-	    END
-	    {
-	        
-	        Write-Host "`nCompleted" -ForegroundColor Green
-	        Write-Host "`n"
-	        
-	    }
-	    
-	    
-	} #End: Function Get-BBiKGFServers
-	
-	
-	Function Get-BBLocalGroupMembers{
+    
+    [cmdletBinding(SupportsShouldProcess)]
+    param (
+        
+    )
+    
+    BEGIN
+    {
+        #Import Active Directory Module before running
+        Import-Module ActiveDirectory
+        
+        $ad = Get-Module | Select Name -First 1
+        $ans = ($ad).Name.Trim()
+        
+        Write-Host "`n"
+        
+    }
+    PROCESS
+    {
+        if ($PSCmdlet.ShouldProcess)
+        {
+            
+            If (!($ans -eq "ActiveDirectory"))
+            {
+                Write-Warning "Active Directory Module not loaded, exiting script!"
+                break
+            }
+            
+            $MyServerList = Get-ADComputer -Filter { Name -like "AZSKGF*" } | select -ExpandProperty Name
+            $MyServerList += Get-ADComputer -Filter { Name -like "JFSKGF*" } | select -ExpandProperty Name
+            $MyServerList += (Get-ADComputer -Filter { Name -like "devazcam*" }) | select -ExpandProperty Name
+            $MyServerList += (Get-ADComputer -Filter { Name -like "devegcam*" }) | select -ExpandProperty Name
+            $MyServerList += (Get-ADComputer -Filter { Name -like "prdazcam*" }) | select -ExpandProperty Name
+            $MyServerList += (Get-ADComputer -Filter { Name -like "prdegcam*" }) | select -ExpandProperty Name
+            $MyServerList += (Get-ADComputer -Filter { Name -like "tstazcam*" }) | select -ExpandProperty Name
+            $MyServerList += (Get-ADComputer -Filter { Name -like "tstazcam*" }) | select -ExpandProperty Name
+            
+            try
+            {
+                If ($MyServerList)
+                {
+                    #Write-Output $MyServerList | Sort
+                    $MyServerList | Sort
+                }
+                else
+                {
+                    Write-Warning "MyServerList Array was not created, exiting script!"
+                    break
+                }
+            }
+            catch
+            {
+                Write-Warning "Can't Write output to screen!"
+                break
+            }
+            
+        }
+        else
+        {
+            Write-Error "Nothing to search or 'SupportsShouldProcess' is False"
+        } #End: Should Process
+    }
+    END
+    {
+        
+        Write-Host "`nCompleted" -ForegroundColor Green
+        Write-Host "`n"
+        
+    }
+    
+    
+} #End: Function Get-BBiKGFServers
+
+
+Function Get-BBLocalGroupMembers
+{
 	<#
 	
 	    .SYNOPSIS
@@ -789,102 +750,104 @@ v1.0.0-Released:20180206
 	    .NOTES
 	
 	#>
-		
-		[cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param (
-			[Parameter(ValuefromPipeline = $true)] `
-			[array]$server = $env:computername,
-			[string]$GroupName = $null
-		) # End: param
-		
-		PROCESS
-		{
-			$finalresult = @()
-			$computer = [ADSI]"WinNT://$server"
-			
-			if (!($groupName))
-			{
-				$Groups = $computer.psbase.Children | Where { $_.psbase.schemaClassName -eq "group" } |
-				select -expand name -ErrorAction SilentlyContinue
-			}
-			else
-			{
-				$groups = $groupName
-			}
-			
-			Try
-			{
-				$CurrentDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().GetDirectoryEntry() |
-				select name, objectsid
-				$domain = $currentdomain.name
-				$SID = $CurrentDomain.objectsid
-				$DomainSID = (New-Object System.Security.Principal.SecurityIdentifier($sid[0], 0)).value
-			}
-			Catch
-			{
-				Write-Warning "Not connected to AD domain..."
-			}
-			Finally
-			{
-				#Write-Host "  " -ForegroundColor Yellow
-			}
-			
-			foreach ($group in $groups)
-			{
-				$gmembers = $null
-				$LocalGroup = [ADSI]("WinNT://$server/$group,group")
-				
-				$GMembers = $LocalGroup.psbase.invoke("Members")
-				$GMemberProps = @{ Server = "$server"; "Local Group" = $group; Name = ""; Type = ""; ADSPath = ""; Domain = ""; SID = "" }
-				$MemberResult = @()
-				
-				if ($gmembers)
-				{
-					foreach ($gmember in $gmembers)
-					{
-						$membertable = new-object psobject -Property $GMemberProps
-						$name = $gmember.GetType().InvokeMember("Name", 'GetProperty', $null, $gmember, $null)
-						$sid = $gmember.GetType().InvokeMember("objectsid", 'GetProperty', $null, $gmember, $null)
-						$UserSid = New-Object System.Security.Principal.SecurityIdentifier($sid, 0)
-						$class = $gmember.GetType().InvokeMember("Class", 'GetProperty', $null, $gmember, $null)
-						$ads = $gmember.GetType().InvokeMember("adspath", 'GetProperty', $null, $gmember, $null)
-						$MemberTable.name = "$name"
-						$MemberTable.type = "$class"
-						$MemberTable.adspath = "$ads"
-						$membertable.sid = $usersid.value
-						
-						if ($userSID -like "$domainsid*")
-						{
-							$MemberTable.domain = "$domain"
-						} # End: if
-						
-						$MemberResult += $MemberTable
-						
-					} #End: Foreach
-					
-				} #End: if
-				
-				$finalresult += $MemberResult
-				
-			} #End: foreach
-			
-			#$finalresult | select server,"Local Group",Name,Type,Domain,SID
-			$finalresult | select server, "Local Group", Name
-			
-		} #End: Process
-		
-	} #End: Function Get-LocalGroupMembers
-	
-	
-	function Get-BBBiosInfo{
-		
-		Set-Location -Path "C:\"
-		get-wmiobject win32_bios | ft -AutoSize
-		
-	} #End: Function Get-BBBiosInfo
-	
-	
-	Function Get-BBADComputerList{
+    
+    [cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param (
+        [Parameter(ValuefromPipeline = $true)] `
+        [array]$server = $env:computername,
+        [string]$GroupName = $null
+    ) # End: param
+    
+    PROCESS
+    {
+        $finalresult = @()
+        $computer = [ADSI]"WinNT://$server"
+        
+        if (!($groupName))
+        {
+            $Groups = $computer.psbase.Children | Where { $_.psbase.schemaClassName -eq "group" } |
+            select -expand name -ErrorAction SilentlyContinue
+        }
+        else
+        {
+            $groups = $groupName
+        }
+        
+        Try
+        {
+            $CurrentDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain().GetDirectoryEntry() |
+            select name, objectsid
+            $domain = $currentdomain.name
+            $SID = $CurrentDomain.objectsid
+            $DomainSID = (New-Object System.Security.Principal.SecurityIdentifier($sid[0], 0)).value
+        }
+        Catch
+        {
+            Write-Warning "Not connected to AD domain..."
+        }
+        Finally
+        {
+            #Write-Host "  " -ForegroundColor Yellow
+        }
+        
+        foreach ($group in $groups)
+        {
+            $gmembers = $null
+            $LocalGroup = [ADSI]("WinNT://$server/$group,group")
+            
+            $GMembers = $LocalGroup.psbase.invoke("Members")
+            $GMemberProps = @{ Server = "$server"; "Local Group" = $group; Name = ""; Type = ""; ADSPath = ""; Domain = ""; SID = "" }
+            $MemberResult = @()
+            
+            if ($gmembers)
+            {
+                foreach ($gmember in $gmembers)
+                {
+                    $membertable = new-object psobject -Property $GMemberProps
+                    $name = $gmember.GetType().InvokeMember("Name", 'GetProperty', $null, $gmember, $null)
+                    $sid = $gmember.GetType().InvokeMember("objectsid", 'GetProperty', $null, $gmember, $null)
+                    $UserSid = New-Object System.Security.Principal.SecurityIdentifier($sid, 0)
+                    $class = $gmember.GetType().InvokeMember("Class", 'GetProperty', $null, $gmember, $null)
+                    $ads = $gmember.GetType().InvokeMember("adspath", 'GetProperty', $null, $gmember, $null)
+                    $MemberTable.name = "$name"
+                    $MemberTable.type = "$class"
+                    $MemberTable.adspath = "$ads"
+                    $membertable.sid = $usersid.value
+                    
+                    if ($userSID -like "$domainsid*")
+                    {
+                        $MemberTable.domain = "$domain"
+                    } # End: if
+                    
+                    $MemberResult += $MemberTable
+                    
+                } #End: Foreach
+                
+            } #End: if
+            
+            $finalresult += $MemberResult
+            
+        } #End: foreach
+        
+        #$finalresult | select server,"Local Group",Name,Type,Domain,SID
+        $finalresult | select server, "Local Group", Name
+        
+    } #End: Process
+    
+} #End: Function Get-LocalGroupMembers
+
+
+function Get-BBBiosInfo
+{
+    
+    Set-Location -Path "C:\"
+    get-wmiobject win32_bios | ft -AutoSize
+    
+} #End: Function Get-BBBiosInfo
+
+
+Function Get-BBADComputerList
+{
 	<#
 	.SYNOPSIS
 	Return a listing of iKGF OU computer names, not including listener names for clustered
@@ -939,80 +902,81 @@ v1.0.0-Released:20180206
 	
 	Import-Module ActiveDirectory 
 	#>
-	    
-	    [cmdletBinding()]
-	    param (
-	        [ValidateSet("amr", "cpdcsa", "cpdcsadr", "ikgfsa", "ikgfsadr")]
-	        [string]$Directory = 'amr',
-	        [switch]$Listen
-	    )
-	    
-	    Write-Verbose "Search domain directory: $Directory"
-	    
-	    if ($Directory -eq 'amr')
-	    {
-	        Write-Verbose "Setting AMR search"
-	        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=Development,OU=iKGF,OU=Resources,DC=amr,DC=corp,DC=intel,DC=com')
-	        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=iKGF,OU=Resources,DC=amr,DC=corp,DC=intel,DC=com'
-	    }
-	    
-	    if ($Directory -eq 'cpdcsa')
-	    {
-	        Write-Verbose "Setting CPDCSA search"
-	        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSA,DC=local')
-	        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSA,DC=local'
-	    }
-	    
-	    if ($Directory -eq 'cpdcsadr')
-	    {
-	        Write-Verbose "Setting CPDCSA search"
-	        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSADR,DC=local')
-	        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSADR,DC=local'
-	    }
-	    
-	    if ($Directory -eq 'ikgfsa')
-	    {
-	        Write-Verbose "Setting IKGFSA search"
-	        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSA,DC=local')
-	        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSA,DC=local'
-	    }
-	    
-	    if ($Directory -eq 'ikgfsadr')
-	    {
-	        Write-Verbose "Setting IKGFSADR search"
-	        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSADR,DC=local')
-	        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSADR,DC=local'
-	    }
-	    
-	    
-	    Write-Verbose "Setting Computer Filter for $Directory"
-	    $DirSearcher.Filter = '(ObjectClass=Computer)'
-	    
-	    Write-Verbose "Finding all computer object names"
-	    if ($Listen)
-	    {
-	        $Name = $DirSearcher.FindAll().GetEnumerator() | ForEach-Object { $_.Properties.name } |`
-	        Sort-Object -Property Name
-	    }
-	    else
-	    {
-	        $Name = $DirSearcher.FindAll().GetEnumerator() | ForEach-Object { $_.Properties.name } |`
-	        Sort-Object -Property Name |`
-	        where {
-	            #            ($_ -notmatch "DV`\d") -AND
-	            ($_ -notmatch "msdtc") -AND
-	            ($_ -notmatch "mscs")
-	        }
-	    }
-	    
-	    ($Name).ToUpper() | Sort
-	    
-	    Write-Verbose "Completed..."
-	    
-	} #End: Function Get-BBADComputerList
-	
-	
-	Function Get-BBInstalledSoftware {
+    
+    [cmdletBinding()]
+    param (
+        [ValidateSet("amr", "cpdcsa", "cpdcsadr", "ikgfsa", "ikgfsadr")]
+        [string]$Directory = 'amr',
+        [switch]$Listen
+    )
+    
+    Write-Verbose "Search domain directory: $Directory"
+    
+    if ($Directory -eq 'amr')
+    {
+        Write-Verbose "Setting AMR search"
+        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=Development,OU=iKGF,OU=Resources,DC=amr,DC=corp,DC=intel,DC=com')
+        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=iKGF,OU=Resources,DC=amr,DC=corp,DC=intel,DC=com'
+    }
+    
+    if ($Directory -eq 'cpdcsa')
+    {
+        Write-Verbose "Setting CPDCSA search"
+        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSA,DC=local')
+        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSA,DC=local'
+    }
+    
+    if ($Directory -eq 'cpdcsadr')
+    {
+        Write-Verbose "Setting CPDCSA search"
+        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSADR,DC=local')
+        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=CPDCSADR,DC=local'
+    }
+    
+    if ($Directory -eq 'ikgfsa')
+    {
+        Write-Verbose "Setting IKGFSA search"
+        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSA,DC=local')
+        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSA,DC=local'
+    }
+    
+    if ($Directory -eq 'ikgfsadr')
+    {
+        Write-Verbose "Setting IKGFSADR search"
+        $DirSearcher = New-Object DirectoryServices.DirectorySearcher([adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSADR,DC=local')
+        $DirSearcher = [adsisearcher][adsi]'LDAP://OU=CPDC,OU=Resources,DC=IKGFSADR,DC=local'
+    }
+    
+    
+    Write-Verbose "Setting Computer Filter for $Directory"
+    $DirSearcher.Filter = '(ObjectClass=Computer)'
+    
+    Write-Verbose "Finding all computer object names"
+    if ($Listen)
+    {
+        $Name = $DirSearcher.FindAll().GetEnumerator() | ForEach-Object { $_.Properties.name } |`
+        Sort-Object -Property Name
+    }
+    else
+    {
+        $Name = $DirSearcher.FindAll().GetEnumerator() | ForEach-Object { $_.Properties.name } |`
+        Sort-Object -Property Name |`
+        where {
+            #            ($_ -notmatch "DV`\d") -AND
+            ($_ -notmatch "msdtc") -AND
+            ($_ -notmatch "mscs")
+        }
+    }
+    
+    ($Name).ToUpper() | Sort
+    
+    Write-Verbose "Completed..."
+    
+} #End: Function Get-BBADComputerList
+
+
+Function Get-BBInstalledSoftware
+{
 	<#	
 	.SYNOPSIS
 	.DESCRIPTION
@@ -1034,93 +998,94 @@ v1.0.0-Released:20180206
 	Group:		IKGF ISE Team
 	Date:		May 8, 2017
 	#>
-		
-		[CmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param
-		(
-			[parameter(mandatory = $false,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $True)
-			]
-			[alias('hostname')]
-			[ValidateLength(1, 16)]
-			[ValidateCount(1, 125)]
-			[string]$computername = ($ENV:Computername),
-			[string]$dt = (Get-Date -uformat "%Y%m%d%H%M%S"),
-			[string]$output = "$computername.SoftwareList.$dt.txt",
-			[string]$outputcsv = "$computername.SoftwareList.$dt.csv"
-		)
-		
-		#CLEAR
-		
-		If (test-path 'C:\temp')
-		{
-			Set-Location -Path 'C:\temp'
-		}
-		Else
-		{
-			Write-Warning "Temp directory does not exist; Exiting Script"
-			Exit
-		}
-		
-		Write-Host "`nGathering local software list`n" -ForegroundColor Green
-		
-		Write-Verbose "Creating empty arrays`n"
-		$arry = @()
-		$arrya = @()
-		$arryb = @()
-		
-		Write-Verbose "Creating Array A`n"
-		$arrya = invoke-command {
-			Get-ChildItem HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall |
-			Foreach { Get-ItemProperty $_.PsPath } |
-			where { $_.Displayname -and ($_.Displayname -match ".*") } |
-			sort Displayname | select DisplayName, Publisher, DisplayVersion
-		} -ComputerName $computername
-		
-		Write-Verbose "Creating Array B`n"
-		$arryb = invoke-command {
-			Get-ChildItem HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall |
-			Foreach { Get-ItemProperty $_.PsPath } |
-			where { $_.Displayname -and ($_.Displayname -match ".*") } |
-			sort Displayname | select DisplayName, Publisher, DisplayVersion
-		} -ComputerName $computername
-		
-		Write-Verbose "Creating main Array`n"
-		$arry = $arrya + $arryb
-		
-		Write-Verbose "Selecting Columns of data and placing into output files.`n"
-		$arry | select DisplayName, Publisher, DisplayVersion -Unique | sort DisplayName | Out-File $output
-		
-		# Creating CSV File
-		if (Test-Path $output)
-		{
-			$a = Get-Content $output | Select -skip 1
-			$a = $a -replace "`0", " "
-			$a | out-file $output
-			$a = $a -replace "\s{2,}", ","
-			$a = $a -replace "Microsoft.P", "Microsoft"
-			$a -replace ",$", "" | Out-Null
-			$a = $a -replace ",$", ""
-			$a | Out-file $outputcsv
-			#$a | Select -skip 1 | Out-file $outputcsv
-			
-			Write-Host "`nCompleted... See ""$output"" for a list of installed software" -ForegroundColor Green
-			
-			if (Test-Path $outputcsv)
-			{
-				Write-Host "Completed... See ""$outputcsv"" for a list of installed software in CSV format`n" -ForegroundColor Green
-			}
-		}
-		else
-		{
-			Write-Warning "Path/File: $output does not exist. Cannot create 'txt' or 'csv' files"
-		}
-		
-	} #End: Function Get-BBInstalledSoftware
-	
-	
-	function Get-BBServiceInfo{
+    
+    [CmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param
+    (
+        [parameter(mandatory = $false,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)
+        ]
+        [alias('hostname')]
+        [ValidateLength(1, 16)]
+        [ValidateCount(1, 125)]
+        [string]$computername = ($ENV:Computername),
+        [string]$dt = (Get-Date -uformat "%Y%m%d%H%M%S"),
+        [string]$output = "$computername.SoftwareList.$dt.txt",
+        [string]$outputcsv = "$computername.SoftwareList.$dt.csv"
+    )
+    
+    #CLEAR
+    
+    If (test-path 'C:\temp')
+    {
+        Set-Location -Path 'C:\temp'
+    }
+    Else
+    {
+        Write-Warning "Temp directory does not exist; Exiting Script"
+        Exit
+    }
+    
+    Write-Host "`nGathering local software list`n" -ForegroundColor Green
+    
+    Write-Verbose "Creating empty arrays`n"
+    $arry = @()
+    $arrya = @()
+    $arryb = @()
+    
+    Write-Verbose "Creating Array A`n"
+    $arrya = invoke-command {
+        Get-ChildItem HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall |
+        Foreach { Get-ItemProperty $_.PsPath } |
+        where { $_.Displayname -and ($_.Displayname -match ".*") } |
+        sort Displayname | select DisplayName, Publisher, DisplayVersion
+    } -ComputerName $computername
+    
+    Write-Verbose "Creating Array B`n"
+    $arryb = invoke-command {
+        Get-ChildItem HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall |
+        Foreach { Get-ItemProperty $_.PsPath } |
+        where { $_.Displayname -and ($_.Displayname -match ".*") } |
+        sort Displayname | select DisplayName, Publisher, DisplayVersion
+    } -ComputerName $computername
+    
+    Write-Verbose "Creating main Array`n"
+    $arry = $arrya + $arryb
+    
+    Write-Verbose "Selecting Columns of data and placing into output files.`n"
+    $arry | select DisplayName, Publisher, DisplayVersion -Unique | sort DisplayName | Out-File $output
+    
+    # Creating CSV File
+    if (Test-Path $output)
+    {
+        $a = Get-Content $output | Select -skip 1
+        $a = $a -replace "`0", " "
+        $a | out-file $output
+        $a = $a -replace "\s{2,}", ","
+        $a = $a -replace "Microsoft.P", "Microsoft"
+        $a -replace ",$", "" | Out-Null
+        $a = $a -replace ",$", ""
+        $a | Out-file $outputcsv
+        #$a | Select -skip 1 | Out-file $outputcsv
+        
+        Write-Host "`nCompleted... See ""$output"" for a list of installed software" -ForegroundColor Green
+        
+        if (Test-Path $outputcsv)
+        {
+            Write-Host "Completed... See ""$outputcsv"" for a list of installed software in CSV format`n" -ForegroundColor Green
+        }
+    }
+    else
+    {
+        Write-Warning "Path/File: $output does not exist. Cannot create 'txt' or 'csv' files"
+    }
+    
+} #End: Function Get-BBInstalledSoftware
+
+
+function Get-BBServiceInfo
+{
 	<#
 	.SYNOPSIS
 	Returns non standard service credentials for one or more computers
@@ -1161,40 +1126,41 @@ v1.0.0-Released:20180206
 	v1.0.1	Added new Credentials to ignore
 	v1.0.0	Initial Script
 	#>
-		
-		[cmdletbinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param (
-			[parameter(mandatory = $false,
-					   Position = 0,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $True)
-			]
-			[string[]]$ComputerName = $env:COMPUTERNAME
-		)
-		
-		# Set default color for Write-Host out put to screen-NORMAL
-		[string]$fgc = 'Green'
-		
-		$ComputerName | foreach {
-			Write-Host "Working on $_" -ForegroundColor $fgc
-			$serviceList = @(gwmi -Class Win32_Service -ComputerName $_ -Property Name, StartName, SystemName -ErrorAction SilentlyContinue)
-			$serviceList | Where {
-				($_.StartName) -and`
-				($_.StartName -ne "LocalSystem") -and`
-				($_.StartName -ne "NT Authority\LocalService") -and`
-				($_.StartName -ne "NT Authority\Local Service") -and`
-				($_.StartName -ne "NT Authority\NetworkService") -and`
-				($_.StartName -ne "NT Authority\Network Service")
-			} | Select SystemName, StartName | Ft -AutoSize
-		}
-		
-		
-		Write-Host "`nCompleted`n" -ForegroundColor $fgc
-	} #End: Function Get-BBServiceInfo
-	
-	
-	function Get-BBTestServer{
-		
+    
+    [cmdletbinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param (
+        [parameter(mandatory = $false,
+                   Position = 0,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)
+        ]
+        [string[]]$ComputerName = $env:COMPUTERNAME
+    )
+    
+    # Set default color for Write-Host out put to screen-NORMAL
+    [string]$fgc = 'Green'
+    
+    $ComputerName | foreach {
+        Write-Host "Working on $_" -ForegroundColor $fgc
+        $serviceList = @(gwmi -Class Win32_Service -ComputerName $_ -Property Name, StartName, SystemName -ErrorAction SilentlyContinue)
+        $serviceList | Where {
+            ($_.StartName) -and`
+            ($_.StartName -ne "LocalSystem") -and`
+            ($_.StartName -ne "NT Authority\LocalService") -and`
+            ($_.StartName -ne "NT Authority\Local Service") -and`
+            ($_.StartName -ne "NT Authority\NetworkService") -and`
+            ($_.StartName -ne "NT Authority\Network Service")
+        } | Select SystemName, StartName | Ft -AutoSize
+    }
+    
+    
+    Write-Host "`nCompleted`n" -ForegroundColor $fgc
+} #End: Function Get-BBServiceInfo
+
+
+function Get-BBTestServer
+{
+    
 	<#
 		.SYNOPSIS
 	
@@ -1213,7 +1179,7 @@ v1.0.0-Released:20180206
 		.NOTES
 	
 	#>
-		
+    
 	<#
 		Edited By:	Brad Beckwith
 		Updated:  	September 21, 2016
@@ -1233,72 +1199,73 @@ v1.0.0-Released:20180206
 		Purpose:   	Used for Admin Tasks to check for iLO connections
 	    Version:   	v1.0.0
 	#>
-		[CmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param (
-			[Parameter(Mandatory = $false,
-					   ValueFromPipeline = $true,
-					   ValueFromPipelineByPropertyName = $true)]
-			[string[]]$ComputerName = ($env:COMPUTERNAME)
-		)
-		
-		BEGIN
-		{
-			
-		}
-		
-		PROCESS
-		{
-			try
-			{
-				
-				foreach ($Computer in $ComputerName)
-				{
-					
-					Write-Verbose "Working on computer: $Computer"
-					
-					$status = @{
-						"ComputerName" = $Computer;
-						#	"TimeStamp" = (Get-Date -f s)
-					}
-					
-					if (Test-Connection $Computer -Count 2 -Quiet)
-					{
-						
-						$status["Results"] = "Up"
-						
-					}
-					else
-					{
-						
-						$status["Results"] = "Down"
-						
-					} # If
-					
-					$obj = New-Object -TypeName PSObject -Property $status
-					
-					Write-Output $obj
-					
-				} # Foreach-Object
-				
-			} #End: Try
-			
-			catch
-			{
-				
-				Write-Verbose "Could not test server $Computer"
-				
-			} #End: Catch
-		}
-		
-		END
-		{
-			
-		}
-		
-	} #End: Function Get-BBTestServer
-	
-	
-	function BBTouch{
+    [CmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param (
+        [Parameter(Mandatory = $false,
+                   ValueFromPipeline = $true,
+                   ValueFromPipelineByPropertyName = $true)]
+        [string[]]$ComputerName = ($env:COMPUTERNAME)
+    )
+    
+    BEGIN
+    {
+        
+    }
+    
+    PROCESS
+    {
+        try
+        {
+            
+            foreach ($Computer in $ComputerName)
+            {
+                
+                Write-Verbose "Working on computer: $Computer"
+                
+                $status = @{
+                    "ComputerName"  = $Computer;
+                    #	"TimeStamp" = (Get-Date -f s)
+                }
+                
+                if (Test-Connection $Computer -Count 2 -Quiet)
+                {
+                    
+                    $status["Results"] = "Up"
+                    
+                }
+                else
+                {
+                    
+                    $status["Results"] = "Down"
+                    
+                } # If
+                
+                $obj = New-Object -TypeName PSObject -Property $status
+                
+                Write-Output $obj
+                
+            } # Foreach-Object
+            
+        } #End: Try
+        
+        catch
+        {
+            
+            Write-Verbose "Could not test server $Computer"
+            
+        } #End: Catch
+    }
+    
+    END
+    {
+        
+    }
+    
+} #End: Function Get-BBTestServer
+
+
+function BBTouch
+{
 	<#
 	
 	.SYNOPSIS
@@ -1324,73 +1291,75 @@ v1.0.0-Released:20180206
 	Resembles touch in bash
 	
 	#>
-		[cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param (
-			[Parameter(Mandatory = $true)]
-			[string]$Name = "EmptyFile.txt",
-			[string]$Loc = ".\"
-		)
-		Write-Debug "Zero"
-		$rtn = New-Item -ItemType file -Name $Name
-		Write-Debug "One"
-		$rtn = "$Loc\$Name"
-		Write-Debug "Two"
-		Write-Output " " | Out-File $rtn
-	} # Function BBTouch
-	
-	
-	Function Get-BBiKGFDomainServerList{
+    [cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Name = "EmptyFile.txt",
+        [string]$Loc = ".\"
+    )
+    Write-Debug "Zero"
+    $rtn = New-Item -ItemType file -Name $Name
+    Write-Debug "One"
+    $rtn = "$Loc\$Name"
+    Write-Debug "Two"
+    Write-Output " " | Out-File $rtn
+} # Function BBTouch
+
+
+Function Get-BBiKGFDomainServerList
+{
 		<#
 	
 	
 		#>
-		
-		[cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param (
-			
-		)
-		
-		$chc = Get-adcomputer -filter 'Name -like "AZSKGF*"' -Properties * |`
-		Select DisplayName, OperatingSystem |`
-		Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
-		
-		$jfc = Get-adcomputer -filter 'Name -like "JFSKGF*"' -Properties * |`
-		Select DisplayName, OperatingSystem |`
-		Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
-		
-		$devaz = Get-adcomputer -filter 'Name -like "DEVAZCAM*"' -Properties * |`
-		Select DisplayName, OperatingSystem |`
-		Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
-		
-		$deveg = Get-adcomputer -filter 'Name -like "DEVEGCAM*"' -Properties * |`
-		Select DisplayName, OperatingSystem |`
-		Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
-		
-		$tstaz = Get-adcomputer -filter 'Name -like "TSTAZCAM*"' -Properties * |`
-		Select DisplayName, OperatingSystem |`
-		Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
-		
-		$tsteg = Get-adcomputer -filter 'Name -like "TSTEGCAM*"' -Properties * |`
-		Select DisplayName, OperatingSystem |`
-		Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
-		
-		$prdaz = Get-adcomputer -filter 'Name -like "PRDAZCAM*"' -Properties * |`
-		Select DisplayName, OperatingSystem |`
-		Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
-		
-		$prdeg = Get-adcomputer -filter 'Name -like "PRDEGCAM*"' -Properties * |`
-		Select DisplayName |`
-		Where { $_.DisplayName }
-		
-		$ikgf = $chc + $jfc + $devaz + $deveg + $tstaz + $tsteg + $prdaz + $prdeg
-		
-		$ikgf | Sort DisplayName | Where { $_.DisplayName }
-		
-	} #End: Function Get-BBiKGFDomainServerList
-	
-	
-	Function Install-File{
-		
+    
+    [cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param (
+        
+    )
+    
+    $chc = Get-adcomputer -filter 'Name -like "AZSKGF*"' -Properties * |`
+    Select DisplayName, OperatingSystem |`
+    Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
+    
+    $jfc = Get-adcomputer -filter 'Name -like "JFSKGF*"' -Properties * |`
+    Select DisplayName, OperatingSystem |`
+    Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
+    
+    $devaz = Get-adcomputer -filter 'Name -like "DEVAZCAM*"' -Properties * |`
+    Select DisplayName, OperatingSystem |`
+    Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
+    
+    $deveg = Get-adcomputer -filter 'Name -like "DEVEGCAM*"' -Properties * |`
+    Select DisplayName, OperatingSystem |`
+    Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
+    
+    $tstaz = Get-adcomputer -filter 'Name -like "TSTAZCAM*"' -Properties * |`
+    Select DisplayName, OperatingSystem |`
+    Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
+    
+    $tsteg = Get-adcomputer -filter 'Name -like "TSTEGCAM*"' -Properties * |`
+    Select DisplayName, OperatingSystem |`
+    Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
+    
+    $prdaz = Get-adcomputer -filter 'Name -like "PRDAZCAM*"' -Properties * |`
+    Select DisplayName, OperatingSystem |`
+    Where { $_.DisplayName -and $_.OperatingSystem } | Select DisplayName
+    
+    $prdeg = Get-adcomputer -filter 'Name -like "PRDEGCAM*"' -Properties * |`
+    Select DisplayName |`
+    Where { $_.DisplayName }
+    
+    $ikgf = $chc + $jfc + $devaz + $deveg + $tstaz + $tsteg + $prdaz + $prdeg
+    
+    $ikgf | Sort DisplayName | Where { $_.DisplayName }
+    
+} #End: Function Get-BBiKGFDomainServerList
+
+
+Function Install-File
+{
+    
 	<#
 	.SYNOPSIS
 		<TBD>
@@ -1424,213 +1393,227 @@ v1.0.0-Released:20180206
 		Version:		1.0.1
 	
 	#>
-		
-		[cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
-		param
-		(
-			[parameter(Mandatory = $true,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $True)]
-			[string]$file,
-			[parameter(Mandatory = $true,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $True)]
-			[bool]$args = $false,
-			[parameter(Mandatory = $false,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $false)]
-			[string]$arguments = "/qf /norestart",
-			[parameter(Mandatory = $false,
-					   ValueFromPipeline = $True,
-					   ValueFromPipelineByPropertyName = $True)]
-			[switch]$NameLog = $true
-		)
-		
-		If ($NameLog)
-		{
-			#Write-Verbose "Finding name log file"
-			$LogPath = Get-Location
-			
-			$i = 0
-			Do
-			{
-				$LogFile = "$LogPath\MasterLog-$i.Log"
-				$i++
-			}
-			While (Test-Path $LogFile)
-			
-			Write-Host "`nLog file name is: $LogFile" -ForegroundColor Yellow
-			
-		} #End: If $NameLog
-		
-		if (Test-path $file)
-		{
-			Write-Verbose "Installing: $file"
-			Write-Output "Installing $file" | Out-File -FilePath $LogFile -Append
-			
-			if ($args -eq $true)
-			{
-				Write-Verbose "We have arguments: $arguments"
-				Start-Process $file -ArgumentList $arguments -Wait
-				Write-Host "Install Complete...`n" -ForegroundColor Green
-			}
-			else
-			{
-				Write-Verbose "No arguments provided"
-				Start-Process $file -Wait
-				Write-Host "Install Complete...`n" -ForegroundColor Green
-			} #End:$args
-			
-		}
-		else
-		{
-			Write-Host "Install not completed..." -ForegroundColor Red
-			Write-Host "`tSee Log file $LogFile`n" -ForegroundColor Yellow
-			Write-Verbose "Install File: $file does not exist..."
-			Write-Output "`nInstall File: $file does not exist..." | Out-File -FilePath $LogFile -Append
-		} #End:Test-Path $file
-		
-	} #End: Function Install-File
-	
-	
-	Function Disable-UAC{
-		## Disable UAC
-		Write-Host "`nDisabling UAC Control" -ForegroundColor Green
-		New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system `
-						 -Name EnableLUA -PropertyType DWord -Value 0 -Force
-	} #End: Function Disable-UAC
-	
-	
-	Function Enable-UAC{
-		## Disable UAC
-		Write-Host "`nDisabling UAC Control" -ForegroundColor Green
-		New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system `
-						 -Name EnableLUA -PropertyType DWord -Value 1 -Force
-	} #End: Function Enable-UAC
-	
-	
-	Function Disable-Cortana{
-		
-		# Disable Cortana
-		Write-Host "Disabling Cortana..." -ForegroundColor Green
-		
-		If (!(Test-Path "HKCU:\Software\Microsoft\Personalization\Settings"))
-		{
-			New-Item -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Force | Out-Null
-		}
-		
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Name "AcceptedPrivacyPolicy" -Type DWord -Value 0
-		
-		If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization"))
-		{
-			New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization" -Force | Out-Null
-		}
-		
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitTextCollection" -Type DWord -Value 1
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitInkCollection" -Type DWord -Value 1
-		
-		If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore"))
-		{
-			New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Force | Out-Null
-		}
-		
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Name "HarvestContacts" -Type DWord -Value 0
-	} #End: Function Disable-Cortana
-	
-	
-	Function Enable-Cortana{
-		# Enable Cortana
-		Write-Host "Disabling Cortana..." -ForegroundColor Green
-		
-		If (!(Test-Path "HKCU:\Software\Microsoft\Personalization\Settings"))
-		{
-			New-Item -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Force | Out-Null
-		}
-		
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Name "AcceptedPrivacyPolicy" -Type DWord -Value 1
-		
-		If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization"))
-		{
-			New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization" -Force | Out-Null
-		}
-		
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitTextCollection" -Type DWord -Value 1
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitInkCollection" -Type DWord -Value 1
-		
-		If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore"))
-		{
-			New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Force | Out-Null
-		}
-		
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Name "HarvestContacts" -Type DWord -Value 0
-	} #End: Function Enable-Cortana
-	
-	
-	Function Disable-Firewall{
-		# Disable Firewall
-		Write-Host "Disabling Firewall..." -ForegroundColor Green
-		Set-NetFirewallProfile -Profile * -Enabled False
-	} #End: Function Disable-Firewall
-	
-	
-	Function Enable-Firewall{
-		# Enable Firewall
-		Write-Host "Enabling Firewall..." -ForegroundColor Green
-		Set-NetFirewallProfile -Profile * -Enabled True
-	} #End: Function Enable-Firewall
-	
-	
-	Function Disable-Defender{
-		# Disable Windows Defender
-		Write-Host "Disabling Windows Defender..."
-		Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Type DWord -Value 1
-	} #End: Function Disable-Defender
-	
-	
-	Function Enable-Defender{
-		# Enable Windows Defender
-		Write-Host "Enabling Windows Defender..."
-		Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Type DWord -Value 0
-	} #End: Function Enable-Defender
-	
-	
-	Function Enable-RemoteDesktop{
-		# Enable Remote Desktop w/o Network Level Authentication
-		Write-Host "Enabling Remote Desktop w/o Network Level Authentication..." -ForegroundColor Green
-		Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Type DWord -Value 0
-		Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -Type DWord -Value 0
-	} #End: Function Enable-RemoteDesktop
-	
-	
-	Function Hide-SearchButton{
-		# Hide Search button / box
-		Write-Host "Hiding Search Box / Button..." -ForegroundColor Green
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 0
-	} #End: Function Hide-SearchButton
-	
-	
-	Function Show-SearchButton{
-		# Show Search button / box
-		Write-Host "Enabling Search Box / Button..." -ForegroundColor Green
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 1
-	} #End: Function Show-SearchButton
-	
-	
-	Function Hide-TaskView{
-		# Hide Task View button
-		Write-Host "Hiding Task View button..." -ForegroundColor Green
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Type DWord -Value 0
-	} #End: Function Hide-TaskView
-	
-	
-	Function Show-TaskView{
-		# Show Task View button
-		Write-Host "Enabling Task View button..." -ForegroundColor Green
-		Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Type DWord -Value 1
-	} #End: Function Show-Taskview
-	
-	
-	Function Get-BBAdvOSInfo{
+    
+    [cmdletBinding(SupportsShouldProcess = $True, ConfirmImpact = 'Low')]
+    param
+    (
+        [parameter(Mandatory = $true,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)]
+        [string]$file,
+        [parameter(Mandatory = $true,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)]
+        [bool]$args = $false,
+        [parameter(Mandatory = $false,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $false)]
+        [string]$arguments = "/qf /norestart",
+        [parameter(Mandatory = $false,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)]
+        [switch]$NameLog = $true
+    )
+    
+    If ($NameLog)
+    {
+        #Write-Verbose "Finding name log file"
+        $LogPath = Get-Location
+        
+        $i = 0
+        Do
+        {
+            $LogFile = "$LogPath\MasterLog-$i.Log"
+            $i++
+        }
+        While (Test-Path $LogFile)
+        
+        Write-Host "`nLog file name is: $LogFile" -ForegroundColor Yellow
+        
+    } #End: If $NameLog
+    
+    if (Test-path $file)
+    {
+        Write-Verbose "Installing: $file"
+        Write-Output "Installing $file" | Out-File -FilePath $LogFile -Append
+        
+        if ($args -eq $true)
+        {
+            Write-Verbose "We have arguments: $arguments"
+            Start-Process $file -ArgumentList $arguments -Wait
+            Write-Host "Install Complete...`n" -ForegroundColor Green
+        }
+        else
+        {
+            Write-Verbose "No arguments provided"
+            Start-Process $file -Wait
+            Write-Host "Install Complete...`n" -ForegroundColor Green
+        } #End:$args
+        
+    }
+    else
+    {
+        Write-Host "Install not completed..." -ForegroundColor Red
+        Write-Host "`tSee Log file $LogFile`n" -ForegroundColor Yellow
+        Write-Verbose "Install File: $file does not exist..."
+        Write-Output "`nInstall File: $file does not exist..." | Out-File -FilePath $LogFile -Append
+    } #End:Test-Path $file
+    
+} #End: Function Install-File
+
+
+Function Disable-UAC
+{
+    ## Disable UAC
+    Write-Host "`nDisabling UAC Control" -ForegroundColor Green
+    New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system `
+                     -Name EnableLUA -PropertyType DWord -Value 0 -Force
+} #End: Function Disable-UAC
+
+
+Function Enable-UAC
+{
+    ## Disable UAC
+    Write-Host "`nDisabling UAC Control" -ForegroundColor Green
+    New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system `
+                     -Name EnableLUA -PropertyType DWord -Value 1 -Force
+} #End: Function Enable-UAC
+
+
+Function Disable-Cortana
+{
+    
+    # Disable Cortana
+    Write-Host "Disabling Cortana..." -ForegroundColor Green
+    
+    If (!(Test-Path "HKCU:\Software\Microsoft\Personalization\Settings"))
+    {
+        New-Item -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Force | Out-Null
+    }
+    
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Name "AcceptedPrivacyPolicy" -Type DWord -Value 0
+    
+    If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization"))
+    {
+        New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization" -Force | Out-Null
+    }
+    
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitTextCollection" -Type DWord -Value 1
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitInkCollection" -Type DWord -Value 1
+    
+    If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore"))
+    {
+        New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Force | Out-Null
+    }
+    
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Name "HarvestContacts" -Type DWord -Value 0
+} #End: Function Disable-Cortana
+
+
+Function Enable-Cortana
+{
+    # Enable Cortana
+    Write-Host "Disabling Cortana..." -ForegroundColor Green
+    
+    If (!(Test-Path "HKCU:\Software\Microsoft\Personalization\Settings"))
+    {
+        New-Item -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Force | Out-Null
+    }
+    
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Personalization\Settings" -Name "AcceptedPrivacyPolicy" -Type DWord -Value 1
+    
+    If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization"))
+    {
+        New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization" -Force | Out-Null
+    }
+    
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitTextCollection" -Type DWord -Value 1
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization" -Name "RestrictImplicitInkCollection" -Type DWord -Value 1
+    
+    If (!(Test-Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore"))
+    {
+        New-Item -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Force | Out-Null
+    }
+    
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\InputPersonalization\TrainedDataStore" -Name "HarvestContacts" -Type DWord -Value 0
+} #End: Function Enable-Cortana
+
+
+Function Disable-Firewall
+{
+    # Disable Firewall
+    Write-Host "Disabling Firewall..." -ForegroundColor Green
+    Set-NetFirewallProfile -Profile * -Enabled False
+} #End: Function Disable-Firewall
+
+
+Function Enable-Firewall
+{
+    # Enable Firewall
+    Write-Host "Enabling Firewall..." -ForegroundColor Green
+    Set-NetFirewallProfile -Profile * -Enabled True
+} #End: Function Enable-Firewall
+
+
+Function Disable-Defender
+{
+    # Disable Windows Defender
+    Write-Host "Disabling Windows Defender..."
+    Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Type DWord -Value 1
+} #End: Function Disable-Defender
+
+
+Function Enable-Defender
+{
+    # Enable Windows Defender
+    Write-Host "Enabling Windows Defender..."
+    Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Type DWord -Value 0
+} #End: Function Enable-Defender
+
+
+Function Enable-RemoteDesktop
+{
+    # Enable Remote Desktop w/o Network Level Authentication
+    Write-Host "Enabling Remote Desktop w/o Network Level Authentication..." -ForegroundColor Green
+    Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Type DWord -Value 0
+    Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -Type DWord -Value 0
+} #End: Function Enable-RemoteDesktop
+
+
+Function Hide-SearchButton
+{
+    # Hide Search button / box
+    Write-Host "Hiding Search Box / Button..." -ForegroundColor Green
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 0
+} #End: Function Hide-SearchButton
+
+
+Function Show-SearchButton
+{
+    # Show Search button / box
+    Write-Host "Enabling Search Box / Button..." -ForegroundColor Green
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 1
+} #End: Function Show-SearchButton
+
+
+Function Hide-TaskView
+{
+    # Hide Task View button
+    Write-Host "Hiding Task View button..." -ForegroundColor Green
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Type DWord -Value 0
+} #End: Function Hide-TaskView
+
+
+Function Show-TaskView
+{
+    # Show Task View button
+    Write-Host "Enabling Task View button..." -ForegroundColor Green
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Type DWord -Value 1
+} #End: Function Show-Taskview
+
+
+Function Get-BBAdvOSInfo
+{
 	<#
 	.SYNOPSIS
 	    To get information on one or more computers, which contains 'ComputerName', 'OSVersion',
@@ -1678,140 +1661,140 @@ v1.0.0-Released:20180206
 	    V1.0.2-Author:Brad Beckwith:Date-20171013
 	    Purpose:    To get information on one or more computers.
 	#>
-	    
-	    [cmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
-	    param (
-	        [parameter(mandatory = $true,
-	                   ValueFromPipeline = $True,
-	                   ValueFromPipelineByPropertyName = $True)
-	        ]
-	        [alias('hostname')]
-	        [ValidateLength(1, 16)]
-	        [ValidateCount(1, 150)]
-	        [string[]]$ComputerName,
-	        [switch]$NameLog
-	    ) #End: Param
-	    
-	    BEGIN
-	    {
-	        
-	        If ($NameLog)
-	        {
-	            Write-Verbose "Creating new log file"
-	            
-	            $i = 0
-	            
-	            Do
-	            {
-	                $LogFile = "BBAdvOSInfoLog-$i.txt"
-	                $i++
-	            }
-	            While (Test-Path -Path $LogFile)
-	            
-	        }
-	        else
-	        {
-	            Write-Verbose "Logging off"
-	        } #End: If $NameLog
-	        
-	        If ($LogFile)
-	        {
-	            $MyStart = (Get-Date -Format "yyyyMMddHHmmss")
-	            Write-Output "Log created at $MyStart" | Out-File $LogFile
-	            Write-Verbose "Log file $LogFile, is located in the current directory"
-	        }
-	        
-	        Write-Debug "Completed BEGIN block"
-	        
-	    } #End: BEGIN Block
-	    
-	    PROCESS
-	    {
-	        Write-Debug "Starting Process block"
-	        
-	        ForEach ($Computer in $ComputerName)
-	        {
-	            If ($PSCmdlet.ShouldProcess($Computer))
-	            {
-	                Write-Verbose "Now connecting to $Computer"
-	                
-	                try
-	                {
-	                    $Continue = $True
-	                    #EV (ErrorVariable), EA (ErrorAction)
-	                    $os = Get-WmiObject -ErrorVariable myErr `
-	                                        -ErrorAction 'Stop' `
-	                                        -ComputerName $Computer `
-	                                        -Class Win32_OperatingSystem |
-	                    Select Caption, BuildNumber, OSArchitecture,
-	                           ServicePackMajorVersion `
-	                           -First 1
-	                }
-	                catch
-	                {
-	                    Write-Verbose "Should be creating Error file now;`
+    
+    [cmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    param (
+        [parameter(mandatory = $true,
+                   ValueFromPipeline = $True,
+                   ValueFromPipelineByPropertyName = $True)
+        ]
+        [alias('hostname')]
+        [ValidateLength(1, 16)]
+        [ValidateCount(1, 150)]
+        [string[]]$ComputerName,
+        [switch]$NameLog
+    ) #End: Param
+    
+    BEGIN
+    {
+        
+        If ($NameLog)
+        {
+            Write-Verbose "Creating new log file"
+            
+            $i = 0
+            
+            Do
+            {
+                $LogFile = "BBAdvOSInfoLog-$i.txt"
+                $i++
+            }
+            While (Test-Path -Path $LogFile)
+            
+        }
+        else
+        {
+            Write-Verbose "Logging off"
+        } #End: If $NameLog
+        
+        If ($LogFile)
+        {
+            $MyStart = (Get-Date -Format "yyyyMMddHHmmss")
+            Write-Output "Log created at $MyStart" | Out-File $LogFile
+            Write-Verbose "Log file $LogFile, is located in the current directory"
+        }
+        
+        Write-Debug "Completed BEGIN block"
+        
+    } #End: BEGIN Block
+    
+    PROCESS
+    {
+        Write-Debug "Starting Process block"
+        
+        ForEach ($Computer in $ComputerName)
+        {
+            If ($PSCmdlet.ShouldProcess($Computer))
+            {
+                Write-Verbose "Now connecting to $Computer"
+                
+                try
+                {
+                    $Continue = $True
+                    #EV (ErrorVariable), EA (ErrorAction)
+                    $os = Get-WmiObject -ErrorVariable myErr `
+                                        -ErrorAction 'Stop' `
+                                        -ComputerName $Computer `
+                                        -Class Win32_OperatingSystem |
+                    Select Caption, BuildNumber, OSArchitecture,
+                           ServicePackMajorVersion `
+                           -First 1
+                }
+                catch
+                {
+                    Write-Verbose "Should be creating Error file now;`
 						Connection to $Computer failed"
-	                    $Continue = $false
-	                    
-	                    #If Error log switch is True
-	                    If ($NameLog)
-	                    {
-	                        Write-Debug "Check NameLog"
-	                        #$Computer | Out-File $LogFile -Append
-	                        Write-Output  "Connection to $Computer failed" | Out-File $LogFile -Append
-	                        #$myErr | Out-File $LogFile -Append
-	                    }
-	                    
-	                } #End: Catch
-	                
-	                If ($Continue)
-	                {
-	                    Write-Verbose "Connection to $Computer succeeded"
-	                    $bios = Get-WmiObject -Class Win32_BIOS -ComputerName $Computer |`
-	                    Select SMBIOSBIOSVersion, SMBIOSMajorVersion, SMBIOSMinorVersion, SerialNumber, BIOSVersion -First 1
-	                    
-	                    $processor = Get-WmiObject -Class Win32_Processor -ComputerName $Computer |`
-	                    Select AddressWidth -First 1
-	                    
-	                    $osarchitecture = $os.osarchitecture -replace '-bit', ''
-	                    
-	                    #$mPSVersion = $PSVersionTable.psversion.major
-	                    $mPSVersion = Invoke-Command -Computername $Computer -Scriptblock { $PSVersionTable.psversion.major }
-	                    
-	                    Write-Debug "Creating properties"
-	                    #Creating PSCustomObject-properties
-	                    $properties = @{
-	                        'ComputerName' = $Computer;
-	                        'OSVersion' = $os.Caption;
-	                        'OSBuild' = $os.BuildNumber;
-	                        'OSArchitecture' = $osarchitecture;
-	                        'OSSPVersion' = $os.ServicePackMajorVersion;
-	                        'BIOSSerialNumber' = $bios.SerialNumber;
-	                        'BIOSVersion' = $bios.SMBIOSBIOSVersion;
-	                        'BIOSMajorVersion' = $bios.SMBIOSMajorVersion;
-	                        'BIOSMinorVersion' = $bios.SMBIOSMinorVersion;
-	                        'BIOSManufacturer' = $bios.Manufacturer;
-	                        'BIOSName' = $bios.Name;
-	                        'ProcArchitecture' = $processor.addresswidth;
-	                        'PowerShellVersion' = $mPSVersion
-	                    } #End: $Properties
-	                    
-	                    Write-Debug "Creating output Object, ready to write to pipeline"
-	                    $obj = New-Object -TypeName PSObject `
-	                                      -Property $properties
-	                    Write-Output $obj
-	                } #End: If $continue
-	                
-	            } #End: If $PSCmdlet
-	            
-	        } #End: ForEach
-	        
-	        Write-Debug "Completing Process block"
-	    } #End: Process Block
-	    
-	    END
-	    {
-	        $MyStop = (Get-Date -Format "yyyyMMddHHmmss")
+                    $Continue = $false
+                    
+                    #If Error log switch is True
+                    If ($NameLog)
+                    {
+                        Write-Debug "Check NameLog"
+                        #$Computer | Out-File $LogFile -Append
+                        Write-Output  "Connection to $Computer failed" | Out-File $LogFile -Append
+                        #$myErr | Out-File $LogFile -Append
+                    }
+                    
+                } #End: Catch
+                
+                If ($Continue)
+                {
+                    Write-Verbose "Connection to $Computer succeeded"
+                    $bios = Get-WmiObject -Class Win32_BIOS -ComputerName $Computer |`
+                    Select SMBIOSBIOSVersion, SMBIOSMajorVersion, SMBIOSMinorVersion, SerialNumber, BIOSVersion -First 1
+                    
+                    $processor = Get-WmiObject -Class Win32_Processor -ComputerName $Computer |`
+                    Select AddressWidth -First 1
+                    
+                    $osarchitecture = $os.osarchitecture -replace '-bit', ''
+                    
+                    #$mPSVersion = $PSVersionTable.psversion.major
+                    $mPSVersion = Invoke-Command -Computername $Computer -Scriptblock { $PSVersionTable.psversion.major }
+                    
+                    Write-Debug "Creating properties"
+                    #Creating PSCustomObject-properties
+                    $properties = @{
+                        'ComputerName'  = $Computer;
+                        'OSVersion'     = $os.Caption;
+                        'OSBuild'       = $os.BuildNumber;
+                        'OSArchitecture' = $osarchitecture;
+                        'OSSPVersion'   = $os.ServicePackMajorVersion;
+                        'BIOSSerialNumber' = $bios.SerialNumber;
+                        'BIOSVersion'   = $bios.SMBIOSBIOSVersion;
+                        'BIOSMajorVersion' = $bios.SMBIOSMajorVersion;
+                        'BIOSMinorVersion' = $bios.SMBIOSMinorVersion;
+                        'BIOSManufacturer' = $bios.Manufacturer;
+                        'BIOSName'      = $bios.Name;
+                        'ProcArchitecture' = $processor.addresswidth;
+                        'PowerShellVersion' = $mPSVersion
+                    } #End: $Properties
+                    
+                    Write-Debug "Creating output Object, ready to write to pipeline"
+                    $obj = New-Object -TypeName PSObject `
+                                      -Property $properties
+                    Write-Output $obj
+                } #End: If $continue
+                
+            } #End: If $PSCmdlet
+            
+        } #End: ForEach
+        
+        Write-Debug "Completing Process block"
+    } #End: Process Block
+    
+    END
+    {
+        $MyStop = (Get-Date -Format "yyyyMMddHHmmss")
         
         if ($NameLog)
         {
@@ -1819,13 +1802,14 @@ v1.0.0-Released:20180206
         }
         
         Write-Verbose "Completed END block"
-	        
-	    } #End: END Block
+        
+    } #End: END Block
     
 } #End: Function Get-BBAdvOSInfo
 
 
-    function Get-BBNICPropInfo{
+function Get-BBNICPropInfo
+{
 <#
 .SYNOPSIS
 
@@ -1868,5 +1852,5 @@ and the value is the original object
     }
     
 } #End: Function Get-BBNICProcInfo
-	
-	#Export-ModuleMember -Function 'Get-*'
+
+#Export-ModuleMember -Function 'Get-*'
