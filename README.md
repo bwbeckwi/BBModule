@@ -1,22 +1,3 @@
 ## Welcome to BBModule ##
 
-#### BBModule is currently at v2.2.8 ####
-'Get-BBHardDriveSize'
-'Set-BBFileTimeStamps'
-'Get-BBIKGFADUserACC'
-'Get-BBIKGFADGrpMbrACC'
-'Get-BBPSVersion'
-'Get-BBSN'
-'Get-BBOSInfo'
-'Get-BBServicesToShutDn'
-'Get-BBiKGFServers'
-'Get-BBLocalGroupMembers'
-'Get-BBBiosInfo'
-'Get-BBADComputerList'
-'Get-BBInstalledSoftware'
-'Get-BBServiceInfo'
-'Get-BBTestServer'
-'BBTouch'
-'Get-BBiKGFDomainServerList'
-'Get-BBiKGFDomainServerList'
-'Get-BBAdvOSInfo'
+#### BBModule is currently at v2.2.7 ####
