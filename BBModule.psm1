@@ -2,6 +2,7 @@
 
     MODULE:  BBMODULE
    
+    Updated: v2.2.9--Added New-BBBackup and Remove-BBOldFiles
     Updated: v2.2.8--Added Get-BBDriveType Function--Gets drive info for a computer
     Updated: v2.2.7--Added Get-BBNICPropInfo--Lets Users select the NIC they want info for.
     Updated: v2.2.6--Updated Get-BBAdvOSInfo--Fixed the error message when not logging to file.
@@ -18,7 +19,285 @@
 	Updated: v2.1.5--Updated the following Functions: Get-BBIKGFADGroupACC,Get-BBIKGFADUserACC and Get-BBiKGFServers
 	Updated: v2.1.4--Added new Function:Get-BBSAdvOSInfo
 	Updated: v2.1.3--Added new Function:Get-BBServiceInfo
-#>	
+#>
+
+    Function New-BBBackup{
+<#
+
+#>
+    [cmdletbinding(SupportsShouldProcess = $true)]
+    param
+    (
+        
+        [parameter(Mandatory = $true, Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [string]$BACKUPsrc,
+        [parameter(Mandatory = $true, Position = 1)]
+        [ValidateNotNullOrEmpty()]
+        [string]$BACKUPdst,
+        #        [parameter(Mandatory = $false)]
+
+        #        [int]$Hrsback,
+
+        [parameter(Mandatory = $false)]
+        $exclude1
+        
+    )
+    
+    BEGIN
+    {
+        Write-Verbose "Starting Backup..."
+    } # Begin
+    
+    
+    PROCESS
+    {
+        
+        if ($PSCmdlet.ShouldProcess)
+        {
+            
+            #$HRStoDelete = $CurrentDate.AddHours(-([System.Math]::Abs($Hrsback)))
+            
+            if ((!(test-path -Path $BACKUPsrc)) -and (!(test-path -Path $BACKUPdst)))
+            {
+                Write-Warning "Source and/or Destination paths do not exist"
+                exit
+            } #if
+            else
+            {
+                Write-Verbose "In process..."
+                Copy-Item -Recurse -Exclude $exclude1 $BACKUPsrc -Destination $BACKUPdst -ErrorAction SilentlyContinue #|`
+                #                    Where-Object { $_.Lastwritetime -le (get-date).AddHours(-$HRStoDelete) }
+            } # if/else
+            
+        } # if should process
+        
+    } # Process
+    
+    
+    END
+    {
+        Write-Verbose "Completed Backup..."
+    } # End
+    
+} #End Function: New-BBBackup
+
+
+    function Remove-BBOldFiles (){
+<#
+.SYNOPSIS
+This function removes old Batch-Order-Dropbox files per user set days.
+.DESCRIPTION
+
+.PARAMETER Path
+The Path parameter requires the path to check for file/directory deletion.
+
+.PARAMETER DaysBack
+The DaysBack parameter is the number of days, starting today that you want to keep
+going back in time. An example would be that you want to keep 60 days back, but
+nothing before 60 days ago.
+
+.PARAMETER CurrentDate
+The CurrentDate parameter just refers to todays date.
+
+.PARAMETER Dfmt
+The parameter Dfmt is the date output format used to help name files.
+(e.g. 20171031083023 "Year,Month,Day,Minute and seconds")
+
+.PARAMETER LogName
+The LogName parameter is used to name the output log file.
+
+.PARAMETER Date2Delete
+The Date2Delete paramter is the current date/time minus the number of days to keep
+
+.PARAMETER DelFiles
+
+
+.EXAMPLE
+C:\PS>Remove-BODropBoxFiles -Path $Path -Daysback $Daysback -Verbose
+Prints out put to the screen and shows what all variables are set to.
+Creates a log file as to what was deleted. Log files are placed in the
+'D:\Logs' directory.
+
+.EXAMPLE
+C:\PS>Remove-BODropBoxFiles -Path $Path -Daysback $Daysback -DelFiles
+This is the normal way to use the script. No output to the screen only the log
+file is saved. Log files are placed in the 'D:\Logs' directory.
+
+.EXAMPLE
+C:\PS>Remove-BODropBoxFiles -Path $Path -Daysback $Daysback -Verbose -DelFiles
+Prints out put to the screen and shows what all variables are set to.
+Creates a log file as to what was deleted and deletes the files older than the number
+of days back set by the user. Log files are placed in the 'D:\Logs' directory.
+
+.INPUTS
+Path to the directory of files to be purged and the number of days back that
+the user wants to remove (delete), only keeping the last 'n' days.
+
+.OUTPUTS
+Verbose output is displayed on the screen. Log files are placed in the
+'D:\Logs' directory. This can be changed on the command line.
+
+.NOTES
+v1.5.5--Updated by:Brad Beckwith--Date: 20171204--Purpose: Finalized for Development
+v1.5.4--Updated by:Brad Beckwith--Date: 20171127--Purpose: Adding more help, renaming function, verifying
+        script. Working with Rich to test in development on AZSKGFOSSD02.
+
+v1.5.3--Updated by:Brad Beckwith--Date: 20171025--Purpose: Create a function to handle the passed variables
+        and to clean up the script. Also, adding help to this script.
+#>    
+    [cmdletbinding(SupportsShouldProcess = $true)]
+    param
+    (
+        
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+        [parameter(Mandatory = $true)]
+        [int]$Daysback,
+        [parameter(Mandatory = $false)]
+        [DateTime]$Logs,
+        [parameter(Mandatory = $false)]
+        [DateTime]$CurrentDate,
+        [parameter(Mandatory = $false)]
+        [DateTime]$DatetoDelete,
+        [parameter(Mandatory = $false)]
+        [string]$Dfmt,
+        [parameter(Mandatory = $false)]
+        [string]$LogName = "R:\DFSRoot\IKGF\ISE_Jobs\Logs",
+        [parameter(Mandatory = $false)]
+        [switch]$DelFiles
+        
+    )
+    
+    BEGIN
+    {
+        
+        function Get-BBCurDate
+        {
+         <#	
+
+        .SYNOPSIS
+            This is only a helper function to return the current date and time.
+
+        .DESCRIPTION
+        	This function only returns the date shown like this:
+            'yyyyMMddHHmmss' (No single quotes)
+            
+        .PARAMETER None
+            N/A
+
+        .INPUTS
+            N/A
+
+        .OUTPUTS
+            N/A
+
+        .NOTES
+            v1.0.0--Author:Brad Beckwith--Date:October 31, 2017
+            Purpose:Return current time in 'yyyyMMddHHmmss' format to create file names.
+        #>
+            
+            #region ExampleCode  
+            
+            #Example Code 
+            #    $d=(Get-Date)    
+            #    $dy=$d.Year
+            #    $dm = $d.Month
+            #    $dd= $d.Day
+            #    $dh = $d.Hour
+            #    $dmm = $d.Min
+            #    $ds = $d.Second
+            #    $CurDate = "$dy$dm$dd$dh$dmm$ds"
+            
+            #endregion
+            
+            BEGIN
+            {
+                
+            }
+            PROCESS
+            {
+                $CurDate = Get-Date -Format "yyyyMMddHHmmss"
+            }
+            END
+            {
+                Return $CurDate
+            }
+            
+        } #End function: Get-BBCurDate
+        
+    }
+    
+    PROCESS
+    {
+        
+        ## CONST - DO NOT EDIT ##
+        [datetime]$CurrentDate = Get-Date
+        [string]$Dfmt = Get-BBCurDate
+        
+        #$Dir = $Path
+        
+        #[string]$Logs = "D:\Logs"
+        [string]$Logs = $Path
+        
+        [string]$LogName = "$Logs\$(($Path -split '\\')[-1].trim().toupper())_$($Dfmt).Log"
+        [datetime]$DatetoDelete = $CurrentDate.AddDays(- ([System.Math]::Abs($Daysback)))
+        
+        if (!(test-path -Path $Path))
+        {
+            Write-Warning "Path:`"$Path`" does not exist..."
+            Write-Output "Path:`"$Path`" does not exist..." | Out-file $LogName
+            exit
+        }
+        else
+        {
+            
+            if ($PSCmdlet.ShouldProcess)
+            {
+                
+                if (!(Test-Path -Path $Logs)) { New-Item $Logs -type directory | Out-Null }
+                
+                Write-Verbose "Getting File Names"
+                Write-Debug "CurrentDate=$CurrentDate, Dfmt=$Dfmt,Dir=$Path,LogName=$LogName,DatetoDelete=$DatetoDelete"
+                
+                
+                $FileName = Get-ChildItem $Path -Recurse -file | Where-Object { $_.LastWriteTime -lt $DatetoDelete } | select -Expand FullName
+                
+                if ($DelFiles -and ($FileName))
+                {
+                    Write-Verbose "Removing files"
+                    Foreach ($file in $FileName)
+                    {
+                        #                        Write-Verbose "Deleting file $file"
+                        Write-Output "Deleting file $file" | Out-File $LogName
+                        Remove-Item $file -Force | Out-Null
+                        
+                        ##### This section only shows the directory info for each file. #####    
+                        #$cnt = ($file -split '\\').Count
+                        #$cnt = $cnt - 2
+                        #($file -split '\\')[0..$cnt] -join '\'
+                    } #foreach
+                    
+                } #if
+                else
+                {
+                    Write-Verbose "No files need to be deleted at this time"
+                }
+                
+            } #if
+            
+        } #else
+        
+    } #Process   
+    
+    END
+    {
+        Write-Verbose "Complete..."
+    }
+    
+} #End Function: Remove-BBOldFiles
+
 
     function Get-BBDriveType{
 <#	
